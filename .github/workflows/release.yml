@@ -1,43 +1,32 @@
-name: Build and Release Flutter App
-
+name: Publicacion Automatica
 on:
   push:
     tags:
-      - 'v*' # Se activa cuando se crea un tag como v1.0, v1.2.1, etc.
+      - 'v*' # Se activa cuando creas una versión como v1.0
 
 jobs:
-  build-and-release:
-    # Otorga permisos para que la acción pueda crear una release en GitHub
-    permissions:
-      contents: write
-
-    # ¡MUY IMPORTANTE! Especifica que el trabajo debe correr en un entorno de Windows
+  build:
+    name: Compilando para Android y Windows
     runs-on: windows-latest
-
     steps:
-      - name: Checkout del código
-        uses: actions/checkout@v3
-
-      - name: Configurar Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - name: Instalar dependencias
-        run: flutter pub get
+      - name: Build Android
+        run: flutter build apk --release
 
-      - name: Habilitar soporte para escritorio de Windows
-        run: flutter config --enable-windows-desktop
+      - name: Build Windows
+        run: |
+          flutter config --enable-windows-desktop
+          flutter build windows --release
 
-      - name: Compilar ejecutable de Windows
-        run: flutter build windows --release
-
-      # Este paso crea la release en GitHub y adjunta el ejecutable
-      - name: Crear GitHub Release
-        id: create_release
+      - name: Crear Release y Subir Archivos
         uses: softprops/action-gh-release@v1
         with:
-          # Busca el ejecutable en la carpeta de compilación de Windows
-          files: build/windows/runner/Release/*.exe
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build\windows\x64\runner\Release\myapp.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
